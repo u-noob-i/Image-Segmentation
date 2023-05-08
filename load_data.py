@@ -40,6 +40,16 @@ def get_data(x_path, y_path):
     y.set_shape([h, w, 1])
     return x, y
 
+def get_classification_data(x, y):
+    def get_image(x, y):
+        x = read_image(x.decode())
+        y = y.astype(np.float32)
+        return x, y
+    x, y = tf.numpy_function(get_image, [x, y], [tf.float32, tf.float32])
+    x.set_shape([h, w, 3])
+    y.set_shape([1])
+    return x, y
+
 def tf_data(x, y, buffer_size = 100, batch_size = 4, num_epochs = 1):
     dataset = tf.data.Dataset.from_tensor_slices((x, y))
     dataset = dataset.map(get_data)
@@ -49,9 +59,18 @@ def tf_data(x, y, buffer_size = 100, batch_size = 4, num_epochs = 1):
     dataset = dataset.prefetch(4)
     return dataset
 
+def tf_classification(x, y, buffer_size = 100, batch_size = 4, num_epochs = 1):
+    dataset = tf.data.Dataset.from_tensor_slices((x, y))
+    dataset = dataset.map(get_classification_data)
+    dataset = dataset.shuffle(buffer_size = buffer_size)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.repeat(num_epochs)
+    dataset = dataset.prefetch(4)
+    return dataset
+
 def get_np_images(X_path, Y_path):
     X = np.zeros((len(X_path), h, w, 3), dtype=np.float32)
-    Y = np.zeros((len(Y_path), h, w, 1), dtype=bool)
+    Y = np.zeros((len(Y_path), h, w, 1), dtype=np.bool)
     for idx, x in enumerate(X_path):
         img = read_image(x)
         X[idx] = img
